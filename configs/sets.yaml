@@ -1,0 +1,41 @@
+# Evaluation sets.
+# A seed fixes the user command and the box layout (env.reset(seed=...)).
+# Train-ID does not exist: training layouts cannot be rebuilt.
+
+machine: lab-rtx4070ti     # every number in the report comes from this machine
+processes: 8
+image_episodes_per_set: 20 # image + segmentation mask saved inline, spread over densities
+
+sets:
+  validation:
+    seeds_from: 1000       # already used by the beca evaluations
+    boxes: [0, 10, 20, 30]
+    episodes_per_density: 20
+  test_id:
+    seeds_from: 2000       # never used before
+    boxes: [10, 20, 30]
+    episodes_per_density: 100
+  test_id_0:
+    seeds_from: 2000
+    boxes: [0]
+    episodes_per_density: 50
+  test_ood_box_colour:     # geom_rgba of the boxes: "detects red" vs "detects obstacle"
+    like: test_id
+    variant: box_colour
+  test_ood_floor_tint:     # mat_rgba of the floor
+    like: test_id
+    variant: floor_tint
+  test_ood_lighting:       # spotlight position/intensity, no shadows, headlight
+    like: test_id
+    variant: lighting
+
+baselines:                 # on Test-ID seeds
+  episodes_per_density: 50
+  boxes: [10, 20, 30]
+  kinds:
+    - walker_only          # (a) no CNN: follows the command, does not avoid
+    - black_image          # (b) OOD input, not "the policy without vision"
+    - noise_image          # (c)
+
+# Concrete OOD values are set in src/scenarios.py (day 1); they must stay
+# disjoint from any fine-tune domain randomisation ranges.

@@ -1,0 +1,13 @@
+{
+ "task": "obstacles",
+ "algorithm": "ppo",
+ "walker": "checkpoints/g1_vel_v1",
+ "name": "planPW",
+ "steps": 6000000,
+ "envs": 12,
+ "seed": 0,
+ "checkpoint_every": 250000,
+ "buffer": 300000,
+ "learning_starts": 5000,
+ "skip_check": false
+}

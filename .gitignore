@@ -1,0 +1,24 @@
+# fetched by setup/setup.sh (MuJoCo Menagerie G1)
+external/
+
+# python / jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+
+# full rollout logs: regenerated from configs/ with scripts/; only the
+# published subset (episodes with image) lives in data/
+data/raw/
+results/raw/
+
+# LaTeX build artefacts
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.bbl
+report/*.blg
+report/*.fls
+report/*.fdb_latexmk
+report/*.synctex.gz

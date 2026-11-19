@@ -1,0 +1,1 @@
+walkL full-velocity walker (curriculum stage 4), from runs/walkL/checkpoints/000049000000, 2026-11-05. 10-episode eval: 12/13 commands 100%, fails 1.0,0,1.0 (tracking 0.49); wobbles turning at yaw 1.0. Use: --init pretrained/g1_vel_v1 --blind
