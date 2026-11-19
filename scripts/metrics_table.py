@@ -22,7 +22,7 @@ def markdown(t, by):
         cells = [str(r[b]) for b in by] + [str(r["n"])]
         cells += [fmt(r[k], r[f"{k}_lo"], r[f"{k}_hi"]) for k in ("success", "box_hit", "fall")]
         cells += [fmt(r[k], r[f"{k}_lo"], r[f"{k}_hi"], pct=False) for k in ("progress", "min_clearance")]
-        cells += ["–" if r["saturated_vy"] != r["saturated_vy"] else f"{r['saturated_vy']:.0%}"]
+        cells += ["-" if r["saturated_vy"] != r["saturated_vy"] else f"{r['saturated_vy']:.0%}"]
         lines.append("| " + " | ".join(cells) + " |")
     return "\n".join(lines)
 
@@ -50,7 +50,7 @@ def main():
             "## Test-ID-0: deviation from the user's command (no boxes)", "",
             "| quantity | mean [95 % CI] | n |", "|---|---|---|"]
     text += [f"| {r.quantity} | {fmt(r['mean'], r.lo, r.hi, pct=False)} | {r.n} |" for _, r in deviation.iterrows()]
-    (out / "metrics_summary.md").write_text("\n".join(text) + "\n")
+    (out / "metrics_summary.md").write_text("\n".join(text) + "\n", encoding="utf-8")
     print("\n".join(text))
 
 

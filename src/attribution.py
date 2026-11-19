@@ -219,3 +219,101 @@ def ig_by_group(net, frames, idx, scalar, baseline="black", state_baseline=None,
                 row[f"signed_{g}"] = float(signed[g][k])
             rows.append(row)
     return pd.DataFrame(rows)
+
+
+# -- Local maps ---------------------------------------------------------------------
+
+# Oriented scalars: positive evidence = evidence for the avoidance manoeuvre.
+# vx: braking (lower vx). vy: reducing the constant push to the left (lower vy).
+ORIENT = {"vx": -1.0, "vy": -1.0, "yaw": 1.0, "V": 1.0}
+METHODS = ("gradcam_conv3", "gradcam_conv2", "ig_black", "ig_blur", "occlusion")
+
+
+def oriented(net, scalar, sign=None):
+    """f(image, state) -> (N,) oriented scalar (see ORIENT; `sign` overrides)."""
+    j = SCALARS.index(scalar)
+    sign = ORIENT[scalar] if sign is None else sign
+
+    def f(image, state):
+        mean, value = net(image, state)
+        return sign * torch.cat([mean, value], dim=1)[:, j]
+    return f
+
+
+def local_maps(net, image, state, scalar, method, steps=256, fill=None, chunk=16, sign=None):
+    """(N, 64, 64) attribution maps of an oriented scalar for uint8 HWC images.
+    Positive = evidence for the manoeuvre. Grad-CAM: ReLU'd and upsampled
+    (bilinear) from 4x4 (conv3) or 6x6 (conv2). IG: signed, summed over colour
+    channels. Occlusion: drop of the scalar when an 8x8 patch (stride 4) is
+    filled with `fill` (per-channel colour, default the batch mean), averaged
+    over the windows covering each pixel."""
+    from captum.attr import IntegratedGradients, LayerAttribution, LayerGradCam, Occlusion
+
+    from src.load_policy import gradcam_layers
+
+    f = oriented(net, scalar, sign)
+    out = []
+    for start in range(0, len(state), chunk):
+        x, s = to_tensors(image[start:start + chunk], state[start:start + chunk])
+        if method.startswith("gradcam"):
+            layer = gradcam_layers(net.policy)[method.split("_")[1]]
+            cam = LayerGradCam(f, layer).attribute((x, s), relu_attributions=True)
+            m = LayerAttribution.interpolate(cam, (64, 64), interpolate_mode="bilinear")[:, 0]
+        elif method.startswith("ig"):
+            base = image_baseline(method.split("_")[1], x)
+            a, _ = IntegratedGradients(f).attribute((x, s), baselines=(base, s), n_steps=steps,
+                                                    internal_batch_size=1024)
+            m = a.sum(dim=1)
+        elif method == "occlusion":
+            colour = torch.as_tensor(fill if fill is not None else x.mean(dim=(0, 2, 3)), dtype=torch.float32)
+            base = colour.view(1, 3, 1, 1).expand_as(x).contiguous()
+            a = Occlusion(f).attribute((x, s), sliding_window_shapes=((3, 8, 8), (1,)), strides=((3, 4, 4), 1),
+                                       baselines=(base, s), perturbations_per_eval=64)[0]
+            m = a.mean(dim=1)          # the window spans all 3 channels: each gets the same value
+        else:
+            raise ValueError(method)
+        out.append(m.detach().numpy())
+    return np.concatenate(out)
+
+
+# -- Frame selection ------------------------------------------------------------------
+
+def select_frames(frames, per_kind=10, seed=0):
+    """Frames to explain, chosen automatically from the logs. Returns
+    {kind: indices}:
+        onset      a box ahead (1-3 m, visible) and vx about to drop: mean vx falls
+                   by >= 0.3 within the next 5 steps
+        avoiding   mid-manoeuvre: braking (mean vx < 0.3) with a box within 1 m and visible
+        no_box     no box in view (empty mask; episodes without boxes first)
+        collision  the 3-5 steps before each box hit
+    """
+    rng = np.random.default_rng(seed)
+    visible = (frames.mask >= 0).reshape(len(frames), -1).sum(1)
+    vx = frames.mean[:, 0]
+    nxt = np.full(len(frames), np.inf)
+    for e in np.unique(frames.episode):
+        idx = np.flatnonzero(frames.episode == e)
+        for k, i in enumerate(idx):
+            later = vx[idx[k + 1:k + 6]]
+            nxt[i] = later.min() if len(later) else np.inf
+    kinds = {
+        "onset": np.flatnonzero((frames.clearance >= 1) & (frames.clearance <= 3) & (visible > 0) & (nxt - vx <= -0.3)),
+        "avoiding": np.flatnonzero((vx < 0.3) & (frames.clearance < 1) & (visible > 0)),
+        "no_box": np.flatnonzero(visible == 0),
+    }
+    hits = []
+    for e, meta in enumerate(frames.episodes):
+        if meta.get("box_hit"):
+            idx = np.flatnonzero(frames.episode == e)
+            hits += list(idx[-5:-2])
+    kinds["collision"] = np.array(hits, dtype=int)
+    out = {}
+    for kind, pool in kinds.items():
+        if kind == "no_box":   # prefer frames from box-free episodes, then empty views elsewhere
+            pool = np.concatenate([pool[frames.boxes[pool] == 0], pool[frames.boxes[pool] > 0]])
+            out[kind] = pool[:0] if len(pool) == 0 else np.sort(rng.choice(pool, min(per_kind, len(pool)), replace=False))
+        elif kind == "collision":
+            out[kind] = pool[:per_kind * 3]
+        else:
+            out[kind] = np.sort(rng.choice(pool, min(per_kind, len(pool)), replace=False)) if len(pool) else pool
+    return out

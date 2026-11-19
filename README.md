@@ -38,6 +38,9 @@ python scripts/check_rollouts.py data/raw                # integrity: saved imag
 python scripts/metrics_table.py                          # results/metrics_*.csv, metrics_summary.md (95 % CIs)
 python scripts/group_pfi.py                              # results/group_pfi.csv, figures/group_pfi.png
 python scripts/ig_groups.py                              # results/ig_groups.csv, figures/ig_image_share.png
+python scripts/local_maps.py                             # Grad-CAM / IG / occlusion examples + q_RRA per set -> results/q_rra.csv
+MUJOCO_GL=egl python scripts/rerender_pairs.py           # ID/OOD pairs on the same states -> results/pairs.csv, figures/pairs_*.png
+python scripts/gradcam_video.py                          # policy-camera video with Grad-CAM -> results/figures/gradcam_*.mp4
 MUJOCO_GL=egl python scripts/finetune.py                 # optional: CNN-only fine-tune with visual randomisation -> runs/ft_dr/
 MUJOCO_GL=egl python scripts/run_rollouts.py --policy runs/ft_dr/final --out data/raw_ft   # evaluate the fine-tuned policy
 ```

@@ -145,6 +145,34 @@ def blind_image(kind, image, rng):
     raise ValueError(kind)
 
 
+def rerender(env, look, segmenter, qpos, box_centres, box_half, variant):
+    """Image and box mask of a logged state under a visual variant.
+
+    Restores the robot pose (qpos) and the boxes (centres, half widths) and
+    renders after mj_forward. This is NOT the image the policy saw: that one was
+    rendered after mj_step, with the previous sub-step's kinematics (the two
+    differ in most pixels). Use it only to compare variants on the same state,
+    re-rendering every member of a pair and recomputing the outputs on them."""
+    import mujoco
+    from obstacle_env import BOX_HALF_HEIGHT, MAX_BOXES, PARKED
+
+    look.apply(variant)
+    model, data = env.robot.model, env.robot.data
+    for i in range(MAX_BOXES):
+        geom, mocap = env.box_geoms[i], env.box_mocap[i]
+        if i < len(box_centres):
+            half = float(box_half[i])
+            model.geom_size[geom] = [half, half, BOX_HALF_HEIGHT]
+            model.geom_rbound[geom] = np.linalg.norm([half, half, BOX_HALF_HEIGHT])
+            data.mocap_pos[mocap] = [*box_centres[i], BOX_HALF_HEIGHT]
+        else:
+            data.mocap_pos[mocap] = PARKED
+    data.qpos[:] = qpos
+    data.qvel[:] = 0
+    mujoco.mj_forward(model, data)
+    return env.camera_image(), segmenter.mask()
+
+
 class Segmenter:
     """Per-pixel box index (-1 = no box) for the camera "front", rendered from
     the same MjData as the observation image."""
