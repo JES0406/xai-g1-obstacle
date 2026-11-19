@@ -12,6 +12,9 @@ __pycache__/
 data/raw/
 results/raw/
 
+# training runs (fine-tune checkpoints, tensorboard)
+runs/
+
 # LaTeX build artefacts
 report/*.aux
 report/*.log

@@ -99,14 +99,14 @@ def _set_jobs(name, variant, baseline, spec, image_total, episodes):
 _worker = {}
 
 
-def _init_worker():
+def _init_worker(policy_dir=None):
     import torch
 
-    from src.load_policy import SteeringNet, load_ppo, make_env
+    from src.load_policy import PPO_DIR, SteeringNet, load_ppo, make_env
     from src.scenarios import Look, Segmenter
 
     torch.set_num_threads(1)
-    model = load_ppo()
+    model = load_ppo(policy_dir or PPO_DIR)
     env = make_env()
     _worker.update(model=model, net=SteeringNet(model.policy).eval(), env=env,
                    look=Look(env), seg=Segmenter(env))
@@ -180,11 +180,12 @@ def run_episode(job, out):
 # -- Launcher --------------------------------------------------------------------
 
 
-def run(jobs, out, processes=8, log=print):
-    """Run the jobs not yet on disk with a pool of `processes` workers."""
+def run(jobs, out, processes=8, policy=None, log=print):
+    """Run the jobs not yet on disk with a pool of `processes` workers.
+    policy: folder with model.zip (default checkpoints/planPW)."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    _write_run_info(out, processes)
+    _write_run_info(out, processes, policy)
     pending = [j for j in jobs if not j.path(out).exists()]
     log(f"{len(jobs)} episodes, {len(jobs) - len(pending)} already on disk, {len(pending)} to run on {processes} processes")
     if not pending:
@@ -193,7 +194,7 @@ def run(jobs, out, processes=8, log=print):
     pending.sort(key=lambda j: not j.save_image)
     start, done = time.time(), 0
     ctx = mp.get_context("spawn")   # fresh processes: no GL context or torch state inherited
-    with ctx.Pool(processes, initializer=_init_worker) as pool:
+    with ctx.Pool(processes, initializer=_init_worker, initargs=(policy,)) as pool:
         for result in pool.imap_unordered(partial(run_episode, out=out), pending):
             done += 1
             if done % max(1, len(pending) // 50) == 0 or done == len(pending):
@@ -202,7 +203,7 @@ def run(jobs, out, processes=8, log=print):
                 log(f"  {done}/{len(pending)}  {elapsed / 60:5.1f} min  eta {eta / 60:5.1f} min")
 
 
-def _write_run_info(out, processes):
+def _write_run_info(out, processes, policy=None):
     def sh(*cmd):
         try:
             return subprocess.run(cmd, capture_output=True, text=True, cwd=REPO).stdout.strip()
@@ -216,6 +217,7 @@ def _write_run_info(out, processes):
         "dirty": bool(sh("git", "status", "--porcelain", "--untracked-files=no")),
         "mujoco_gl": os.environ.get("MUJOCO_GL", ""),
         "processes": processes,
+        "policy": str(Path(policy).resolve().relative_to(REPO)) if policy else "checkpoints/planPW",
         "started": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
     runs = out / "RUN.json"
@@ -223,6 +225,9 @@ def _write_run_info(out, processes):
     hosts = {h["host"] for h in history} | {info["host"]}
     if len(hosts) > 1:
         print(f"WARNING: {out} mixes episodes from several machines {sorted(hosts)}: renders differ between GPUs")
+    policies = {h.get("policy", "checkpoints/planPW") for h in history} | {info["policy"]}
+    if len(policies) > 1:
+        raise SystemExit(f"{out} already holds episodes of another policy {sorted(policies)}: use another --out")
     runs.write_text(json.dumps(history + [info], indent=1))
 
 

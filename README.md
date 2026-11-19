@@ -35,6 +35,11 @@ MUJOCO_GL=egl python scripts/smoke_load.py   # checkpoints load, env builds, net
 MUJOCO_GL=egl python scripts/run_rollouts.py --dry-run   # list the evaluation sets (configs/sets.yaml)
 MUJOCO_GL=egl python scripts/run_rollouts.py             # all rollouts into data/raw/ (resumable), then a summary
 python scripts/check_rollouts.py data/raw                # integrity: saved images reproduce the logged outputs
+python scripts/metrics_table.py                          # results/metrics_*.csv, metrics_summary.md (95 % CIs)
+python scripts/group_pfi.py                              # results/group_pfi.csv, figures/group_pfi.png
+python scripts/ig_groups.py                              # results/ig_groups.csv, figures/ig_image_share.png
+MUJOCO_GL=egl python scripts/finetune.py                 # optional: CNN-only fine-tune with visual randomisation -> runs/ft_dr/
+MUJOCO_GL=egl python scripts/run_rollouts.py --policy runs/ft_dr/final --out data/raw_ft   # evaluate the fine-tuned policy
 ```
 
 Every number and figure in the report comes from one machine (the lab RTX 4070 Ti)

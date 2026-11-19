@@ -76,6 +76,66 @@ class Look:
         model.vis.headlight.ambient[:] = d["head_ambient"]
 
 
+class VisualRandomisation:
+    """Domain randomisation for the fine-tune, with ranges disjoint from the
+    Test-OOD values above (otherwise Test-OOD stops being out of distribution).
+
+    Each knob is randomised independently with probability `p` per episode;
+    otherwise it keeps the training look.
+        box colour   any hue at least HUE_GAP degrees from the test blue
+        floor tint   rgb multipliers in [0.55, 1], at least TINT_GAP (L-inf) from the test tint
+        lighting     spot on the training side (y < 0), brighter than the test,
+                     shadows kept; headlight brighter and less ambient than the test
+    """
+
+    HUE_GAP = 45.0
+    TINT_GAP = 0.15
+    SPOT_X, SPOT_Y, SPOT_Z = (-2.0, 2.0), (-3.0, -1.0), (3.0, 5.0)
+    SPOT_SCALE = (0.8, 1.3)            # test: 0.6
+    HEAD_DIFFUSE = (0.45, 0.75)        # test: 0.3
+    HEAD_AMBIENT = (0.05, 0.15)        # test: 0.25
+
+    def __init__(self, look, p=0.5):
+        import colorsys
+
+        self.look, self.p = look, p
+        self.test_hue = colorsys.rgb_to_hsv(*BOX_COLOUR_OOD[:3])[0] * 360
+        assert SPOT_POS_OOD[1] > self.SPOT_Y[1]
+        assert SPOT_DIFFUSE_SCALE_OOD < self.SPOT_SCALE[0]
+        assert HEADLIGHT_DIFFUSE_OOD[0] < self.HEAD_DIFFUSE[0] and HEADLIGHT_AMBIENT_OOD[0] > self.HEAD_AMBIENT[1]
+
+    def sample(self, rng):
+        """Apply a random look to the env's model; returns what was drawn."""
+        import colorsys
+
+        self.look.apply("id")
+        model, env, drawn = self.look.env.robot.model, self.look.env, {}
+        if rng.random() < self.p:
+            while True:
+                hue = rng.uniform(0, 360)
+                if abs((hue - self.test_hue + 180) % 360 - 180) >= self.HUE_GAP:
+                    break
+            rgb = colorsys.hsv_to_rgb(hue / 360, rng.uniform(0.6, 0.95), rng.uniform(0.55, 0.95))
+            model.geom_rgba[env.box_geoms] = (*rgb, 1.0)
+            drawn["box_hue"] = hue
+        if rng.random() < self.p:
+            while True:
+                tint = rng.uniform(0.55, 1.0, size=3)
+                if np.abs(tint - np.array(FLOOR_TINT_OOD[:3])).max() >= self.TINT_GAP:
+                    break
+            model.mat_rgba[self.look.floor_material] = (*tint, 1.0)
+            drawn["floor_tint"] = tint.tolist()
+        if rng.random() < self.p:
+            spot = self.look.spot
+            model.light_pos[spot] = (rng.uniform(*self.SPOT_X), rng.uniform(*self.SPOT_Y), rng.uniform(*self.SPOT_Z))
+            model.light_diffuse[spot] = self.look.default["spot_diffuse"] * rng.uniform(*self.SPOT_SCALE)
+            model.vis.headlight.diffuse[:] = rng.uniform(*self.HEAD_DIFFUSE)
+            model.vis.headlight.ambient[:] = rng.uniform(*self.HEAD_AMBIENT)
+            drawn["lighting"] = True
+        self.look.current = "randomised"
+        return drawn
+
+
 def blind_image(kind, image, rng):
     """The image a baseline policy sees instead of the camera's."""
     if kind == "black":

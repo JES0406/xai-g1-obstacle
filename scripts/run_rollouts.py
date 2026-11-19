@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--episodes", type=int, help="episodes per density, overriding the config (debug)")
     parser.add_argument("--processes", type=int, default=None, help="default: the config's")
     parser.add_argument("--out", default=str(REPO / "data/raw"))
+    parser.add_argument("--policy", help="folder with model.zip (default checkpoints/planPW), e.g. runs/ft_dr/final")
     parser.add_argument("--dry-run", action="store_true", help="list the job counts and stop")
     args = parser.parse_args()
 
@@ -44,7 +45,7 @@ def main():
     if args.dry_run:
         return
     start = time.time()
-    run(jobs, args.out, processes=args.processes or config["processes"])
+    run(jobs, args.out, processes=args.processes or config["processes"], policy=args.policy)
     print(f"done in {(time.time() - start) / 60:.1f} min\n")
     print(summary(args.out))
 
