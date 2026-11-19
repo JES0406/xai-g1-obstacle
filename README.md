@@ -32,6 +32,9 @@ with `env/wsl_gl.sh` (laptop only, for debugging).
 
 ```bash
 MUJOCO_GL=egl python scripts/smoke_load.py   # checkpoints load, env builds, net == SB3 action, grads reach the image
+MUJOCO_GL=egl python scripts/run_rollouts.py --dry-run   # list the evaluation sets (configs/sets.yaml)
+MUJOCO_GL=egl python scripts/run_rollouts.py             # all rollouts into data/raw/ (resumable), then a summary
+python scripts/check_rollouts.py data/raw                # integrity: saved images reproduce the logged outputs
 ```
 
 Every number and figure in the report comes from one machine (the lab RTX 4070 Ti)

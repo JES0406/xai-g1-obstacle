@@ -29,13 +29,14 @@ sets:
     like: test_id
     variant: lighting
 
-baselines:                 # on Test-ID seeds
-  episodes_per_density: 50
+baselines:                 # on Test-ID seeds; 17 x 3 densities = 51 episodes per kind
+  seeds_like: test_id
+  episodes_per_density: 17
   boxes: [10, 20, 30]
-  kinds:
-    - walker_only          # (a) no CNN: follows the command, does not avoid
-    - black_image          # (b) OOD input, not "the policy without vision"
-    - noise_image          # (c)
+  kinds:                   # sets baseline_<kind>
+    - walker               # (a) no CNN: follows the command, does not avoid
+    - black                # (b) black image: an OOD input, not "the policy without vision"
+    - noise                # (c) uniform noise image, new every step
 
 # Concrete OOD values are set in src/scenarios.py (day 1); they must stay
 # disjoint from any fine-tune domain randomisation ranges.
