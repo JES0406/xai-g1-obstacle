@@ -116,8 +116,9 @@ def run_episode(job, out):
     """Run one job and write its .npz. Returns a short summary dict."""
     import torch
 
+    from src.attribution import local_maps
     from src.load_policy import to_inputs
-    from src.scenarios import blind_image
+    from src.scenarios import attributed_region, blind_image, hide_region, random_region_like
 
     path = job.path(out)
     if path.exists():
@@ -136,6 +137,14 @@ def run_episode(job, out):
         image = obs["image"]
         if job.baseline in ("black", "noise"):
             image = blind_image(job.baseline, image, rng)
+        elif job.baseline in ("mask_top", "mask_random"):
+            # behaviour test: hide the region Grad-CAM (conv2, evidence for braking) points at, or a
+            # region of the same shape elsewhere, before the policy sees the image
+            cam = local_maps(net, image[None], obs["state"][None], "vx", "gradcam_conv2")[0]
+            region = attributed_region(cam)
+            if job.baseline == "mask_random":
+                region = random_region_like(region, rng)
+            image = hide_region(image, region)
         if job.save_image:
             images.append(image)
             masks.append(w["seg"].mask())

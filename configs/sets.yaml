@@ -37,6 +37,8 @@ baselines:                 # on Test-ID seeds; 17 x 3 densities = 51 episodes pe
     - walker               # (a) no CNN: follows the command, does not avoid
     - black                # (b) black image: an OOD input, not "the policy without vision"
     - noise                # (c) uniform noise image, new every step
+    - mask_top             # behaviour test: hide the top-10 % Grad-CAM region every step
+    - mask_random          # control: same-shaped region at a random offset
 
 # Concrete OOD values are set in src/scenarios.py (day 1); they must stay
 # disjoint from any fine-tune domain randomisation ranges.

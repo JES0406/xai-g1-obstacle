@@ -41,6 +41,8 @@ python scripts/ig_groups.py                              # results/ig_groups.csv
 python scripts/local_maps.py                             # Grad-CAM / IG / occlusion examples + q_RRA per set -> results/q_rra.csv
 MUJOCO_GL=egl python scripts/rerender_pairs.py           # ID/OOD pairs on the same states -> results/pairs.csv, figures/pairs_*.png
 python scripts/gradcam_video.py                          # policy-camera video with Grad-CAM -> results/figures/gradcam_*.mp4
+python scripts/sanity_checks.py                          # randomisation, ROAD, agreement, q_LLE/q_AS, 1-px shifts -> results/sanity_*
+MUJOCO_GL=egl python scripts/run_rollouts.py --sets baseline_mask_top baseline_mask_random   # behaviour test in simulation
 MUJOCO_GL=egl python scripts/finetune.py                 # optional: CNN-only fine-tune with visual randomisation -> runs/ft_dr/
 MUJOCO_GL=egl python scripts/run_rollouts.py --policy runs/ft_dr/final --out data/raw_ft   # evaluate the fine-tuned policy
 ```

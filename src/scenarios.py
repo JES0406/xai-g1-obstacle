@@ -25,7 +25,8 @@ HEADLIGHT_DIFFUSE_OOD = (0.3, 0.3, 0.3)      # was 0.6
 HEADLIGHT_AMBIENT_OOD = (0.25, 0.25, 0.25)   # was 0.1: flatter light, no shadows
 
 VARIANTS = ("id", "box_colour", "floor_tint", "lighting")
-BASELINES = ("walker", "black", "noise")
+BASELINES = ("walker", "black", "noise", "mask_top", "mask_random")
+MASK_FRACTION = 0.10   # behaviour test: share of pixels hidden every step
 
 
 class Look:
@@ -134,6 +135,27 @@ class VisualRandomisation:
             drawn["lighting"] = True
         self.look.current = "randomised"
         return drawn
+
+
+def hide_region(image, region):
+    """Fill the pixels of `region` (H, W bool) with the image's mean colour."""
+    out = image.copy()
+    out[region] = image.reshape(-1, 3).mean(0).astype(image.dtype)
+    return out
+
+
+def attributed_region(attribution, fraction=MASK_FRACTION):
+    """The top-`fraction` pixels of an attribution map, as a bool mask."""
+    k = int(round(fraction * attribution.size))
+    region = np.zeros(attribution.size, bool)
+    region[np.argpartition(-attribution.ravel(), k - 1)[:k]] = True
+    return region.reshape(attribution.shape)
+
+
+def random_region_like(region, rng):
+    """The same shape moved by a random offset (wrapping round the image)."""
+    H, W = region.shape
+    return np.roll(region, (int(rng.integers(H)), int(rng.integers(W))), axis=(0, 1))
 
 
 def blind_image(kind, image, rng):
