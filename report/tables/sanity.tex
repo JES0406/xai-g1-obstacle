@@ -1,0 +1,18 @@
+\begin{table}[t]
+\centering\small
+\caption{Sanity checks ($v_x$ unless stated). ROAD: AUC of $|\Delta s|/\mathrm{std}(s)$, higher = more faithful. Rand.\ $\rho$: Spearman with the original map after randomising the whole network. Last two: relative map change under noise/brightness and under 1-px shifts.}
+\label{tab:sanity}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lrrrrrrr}
+\toprule
+Method & ROAD $v_x$ & ROAD $v_y$ & Rand.\ $\rho$ & q\textsubscript{LLE} & q\textsubscript{AS} & Noise \% & 1-px \% \\
+\midrule
+Grad-CAM conv3 & 0.206 & 0.217 & 0.19 & 0.588 & 0.0031 & 12 & 56 \\
+Grad-CAM conv2 & 0.205 & 0.213 & 0.36 & 0.254 & 0.0014 & 23 & 92 \\
+IG (black) & 0.092 & 0.131 & 0.45 & 0.0474 & 0.00046 & 6 & 117 \\
+IG (blur) & 0.326 & 0.364 & 0.72 & 0.0174 & 0.00025 & 8 & 112 \\
+Occlusion & 0.365 & 0.368 & 0.25 & 0.399 & 0.0065 & 6 & 44 \\
+Random order & 0.018 & 0.021 &  &  &  &  &  \\
+\bottomrule
+\end{tabular}}
+\end{table}

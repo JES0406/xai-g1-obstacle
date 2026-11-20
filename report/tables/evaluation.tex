@@ -1,0 +1,22 @@
+\begin{table}[t]
+\centering\small
+\caption{Closed-loop evaluation, 10/20/30 boxes pooled. Rates with 95\,\% Wilson intervals; progress = distance covered / commanded.}
+\label{tab:evaluation}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lrllrr}
+\toprule
+Set & $n$ & Success \% & Box hit \% & Fall \% & Progress \\
+\midrule
+Validation (seeds 1000+) & 60 & 95 [86, 98] & 5 [2, 14] & 0 & 1.10 \\
+Test-ID (new layouts) & 300 & 94 [90, 96] & 5 [3, 8] & 1 & 0.95 \\
+OOD: blue boxes & 300 & 62 [56, 67] & 36 [31, 42] & 2 & 0.78 \\
+OOD: floor tint & 300 & 71 [65, 76] & 8 [6, 12] & 0 & 0.63 \\
+OOD: lighting & 300 & 93 [89, 95] & 7 [5, 10] & 0 & 1.02 \\
+Baseline: walker only & 51 & 20 [11, 32] & 80 [68, 89] & 0 & 0.41 \\
+Baseline: black image & 51 & 0 [0, 7] & 25 [16, 39] & 0 & 0.04 \\
+Baseline: noise image & 51 & 22 [12, 35] & 78 [65, 88] & 0 & 0.44 \\
+Behaviour: hide Grad-CAM region & 51 & 75 [61, 84] & 25 [16, 39] & 0 & 0.86 \\
+Behaviour: hide random region & 51 & 94 [84, 98] & 6 [2, 16] & 0 & 0.94 \\
+\bottomrule
+\end{tabular}}
+\end{table}
