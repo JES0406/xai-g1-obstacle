@@ -22,10 +22,10 @@
 
 % Length: 5-6 pages recommended, 8 maximum.
 
-\section{Introduction}
+\section{Introduction}\label{sec:intro}
 \writehere{Problem: a PPO policy~\cite{schulman2017ppo} steers a Unitree G1 around boxes from a 64$\times$64 camera, on top of a frozen walking policy. Motivation and stakeholder: the person who decides the sim-to-real step needs to know whether the network avoids obstacles or a shortcut. State the research questions. ($\approx$0.5 page)}
 
-\section{Data and methods}
+\section{Data and methods}\label{sec:methods}
 \subsection{Environment, model and rollout dataset}
 \writehere{Dataset description: origin, link, size, types, preprocessing (data/README.md has every number). Model: NatureCNN + state MLP, outputs a residual on the velocity command, clip and EMA outside the network~\cite{raffin2021sb3,todorov2012mujoco,menagerie2022}. Protocol: validation seeds, Test-ID, Test-ID-0, three OOD looks, baselines; why there is no Train-ID.}
 
@@ -34,7 +34,7 @@
 \subsection{Explanation methods}
 \writehere{Outputs explained (raw $\mu_{vx}$, $\mu_{vy}$, $V$; orientation $s=-\mu$). Global: group permutation importance and IG aggregated by input group. Local: Grad-CAM~\cite{selvaraju2017gradcam} (conv3, conv2), Integrated Gradients~\cite{sundararajan2017axiomatic} (black and blur baselines), occlusion; Captum~\cite{kokhlikyan2020captum}. Localisation q\textsubscript{RRA}~\cite{arras2020clevrxai}. Sanity checks: randomisation~\cite{adebayo2018sanity}, ROAD~\cite{rong2022road}, agreement, q\textsubscript{LLE}/q\textsubscript{AS}~\cite{alvarezmelis2018robustness,yeh2019infidelity}, behaviour test. ($\approx$1.5 pages with 2.1)}
 
-\section{Results}
+\section{Results}\label{sec:results}
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{group_pfi.png}
@@ -60,7 +60,7 @@
 
 \writehere{Evaluation metrics and what they say about generalisation (Table~\ref{tab:evaluation}). Global findings (Figures~\ref{fig:pfi}, \ref{fig:ig}). Local maps and localisation (Figure~\ref{fig:local}, Table~\ref{tab:qrra}), including one success and one failure case. ($\approx$1.5 pages)}
 
-\section{Actions and insights}
+\section{Actions and insights}\label{sec:actions}
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.62\linewidth]{pairs_vx.png}
@@ -72,7 +72,7 @@
 
 \writehere{Diagnosis from the paired re-renders (Figure~\ref{fig:pairs}); the two test-time interventions and what they prove causally; the fine-tune result (Table~\ref{tab:before-after}); recommendation for the stakeholder. ($\approx$1 page)}
 
-\section{Discussion}
+\section{Discussion}\label{sec:discussion}
 \input{tables/sanity}
 
 \writehere{Sanity checks (Table~\ref{tab:sanity}) and what they imply for trusting each method; faithfulness vs plausibility~\cite{jain2019attention,jacovi2020faithfulness}; IG baseline sensitivity; contrastive vs non-contrastive references; attribution on a high-level action in a hierarchical controller; temporal credit; OOD ablations vs permutation; how a stakeholder could over-trust a heatmap; sim-to-real gap; limitations and future work. ($\approx$1--1.5 pages)}
