@@ -1,0 +1,31 @@
+[
+ {
+  "host": "AA25LABIAP02",
+  "gpu": "NVIDIA GeForce RTX 4070 Ti, 560.28.03",
+  "commit": "301530f",
+  "dirty": false,
+  "mujoco_gl": "egl",
+  "processes": 8,
+  "started": "2026-11-19 21:06:11"
+ },
+ {
+  "host": "AA25LABIAP02",
+  "gpu": "NVIDIA GeForce RTX 4070 Ti, 560.28.03",
+  "commit": "3fb0a0f",
+  "dirty": false,
+  "mujoco_gl": "egl",
+  "processes": 8,
+  "policy": "checkpoints/planPW",
+  "started": "2026-11-20 12:09:53"
+ },
+ {
+  "host": "AA25LABIAP02",
+  "gpu": "NVIDIA GeForce RTX 4070 Ti, 560.28.03",
+  "commit": "4c01dfc",
+  "dirty": false,
+  "mujoco_gl": "egl",
+  "processes": 8,
+  "policy": "checkpoints/planPW",
+  "started": "2026-11-20 13:46:20"
+ }
+]
