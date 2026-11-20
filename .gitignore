@@ -15,6 +15,9 @@ results/raw/
 # training runs (fine-tune checkpoints, tensorboard)
 runs/
 
+# run logs
+*.log
+
 # LaTeX build artefacts
 report/*.aux
 report/*.log

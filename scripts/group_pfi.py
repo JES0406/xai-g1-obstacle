@@ -55,8 +55,9 @@ def main():
     parser.add_argument("--sets", nargs="+", default=["test_id", "test_id_0"])
     parser.add_argument("--repeats", type=int, default=10)
     parser.add_argument("--out", default=str(REPO / "results"))
+    parser.add_argument("--threads", type=int, default=os.cpu_count() or 4)
     args = parser.parse_args()
-    torch.set_num_threads(os.cpu_count() or 4)
+    torch.set_num_threads(args.threads)
 
     frames = load_frames(args.data, sets=args.sets)
     print(f"{len(frames)} frames from {len(np.unique(frames.episode))} episodes ({', '.join(args.sets)})")

@@ -22,9 +22,13 @@ from src.load_policy import SteeringNet, load_ppo  # noqa: E402
 PER_STEP = ("state", "mean", "value", "action", "command", "clearance", "qpos", "qvel", "reward")
 
 
-def main(root):
+def main(root, policy=None):
     torch.set_num_threads(4)
-    net = SteeringNet(load_ppo().policy).eval()
+    run_info = Path(root) / "RUN.json"
+    if policy is None and run_info.exists():          # the policy that produced these episodes
+        policy = REPO / json.loads(run_info.read_text())[-1].get("policy", "checkpoints/planPW")
+    net = SteeringNet(load_ppo(policy).policy if policy else load_ppo().policy).eval()
+    print(f"checking with policy {policy or 'checkpoints/planPW'}")
     paths = sorted(p for p in Path(root).glob("*/b*_s*.npz") if not p.name.endswith(".tmp.npz"))
     problems, worst_mu, worst_v, red_cover = [], 0.0, 0.0, []
     for path in paths:
@@ -72,4 +76,10 @@ def main(root):
 
 
 if __name__ == "__main__":
-    sys.exit(0 if main(sys.argv[1] if len(sys.argv) > 1 else REPO / "data/raw") else 1)
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("root", nargs="?", default=str(REPO / "data/raw"))
+    parser.add_argument("--policy", help="default: the policy recorded in <root>/RUN.json")
+    args = parser.parse_args()
+    sys.exit(0 if main(args.root, args.policy) else 1)

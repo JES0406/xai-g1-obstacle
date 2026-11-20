@@ -43,6 +43,11 @@ MUJOCO_GL=egl python scripts/rerender_pairs.py           # ID/OOD pairs on the s
 python scripts/gradcam_video.py                          # policy-camera video with Grad-CAM -> results/figures/gradcam_*.mp4
 python scripts/sanity_checks.py                          # randomisation, ROAD, agreement, q_LLE/q_AS, 1-px shifts -> results/sanity_*
 MUJOCO_GL=egl python scripts/run_rollouts.py --sets baseline_mask_top baseline_mask_random   # behaviour test in simulation
+python scripts/colour_reference.py                       # training floor colour -> configs/colour_reference.json
+MUJOCO_GL=egl python scripts/run_rollouts.py --sets int_hue_box_colour int_hue_test_id int_norm_floor_tint int_norm_test_id   # test-time interventions
+python scripts/local_maps.py --no-examples --sets int_hue_box_colour int_norm_floor_tint --out results/interventions
+python scripts/local_maps.py --no-examples --policy runs/ft_dr/final --data data/raw_ft --out results/ft
+python scripts/before_after.py                           # results/before_after.md: original / intervention / fine-tune
 MUJOCO_GL=egl python scripts/finetune.py                 # optional: CNN-only fine-tune with visual randomisation -> runs/ft_dr/
 MUJOCO_GL=egl python scripts/run_rollouts.py --policy runs/ft_dr/final --out data/raw_ft   # evaluate the fine-tuned policy
 ```

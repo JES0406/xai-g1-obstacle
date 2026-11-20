@@ -158,6 +158,60 @@ def random_region_like(region, rng):
     return np.roll(region, (int(rng.integers(H)), int(rng.integers(W))), axis=(0, 1))
 
 
+# -- Test-time interventions (no retraining): transform the image before the policy --
+
+TRANSFORMS = ("", "hue_canon", "floor_norm")
+FLOOR_SATURATION_MAX, FLOOR_VALUE_MAX = 0.7, 0.35   # floor pixels: not strongly coloured (boxes) and dark (not sky)
+SATURATION_MIN, VALUE_MIN = 0.7, 0.1    # strongly coloured pixels: boxes (and their reflections); sky ~0.57, floor <= 0.5
+TRAINING_BOX_HUE = 0.0                  # red (0.8, 0.1, 0.1)
+
+
+def canonical_hue(image):
+    """Give every strongly saturated pixel the training box hue (red), keeping its
+    saturation and brightness. Tests the "detects red" explanation: if blue boxes
+    recoloured red are avoided again, colour was what the policy used."""
+    from matplotlib.colors import hsv_to_rgb, rgb_to_hsv
+
+    hsv = rgb_to_hsv(image.astype(np.float64) / 255)
+    sel = (hsv[..., 1] > SATURATION_MIN) & (hsv[..., 2] > VALUE_MIN)
+    hsv[..., 0][sel] = TRAINING_BOX_HUE
+    return np.clip(np.round(hsv_to_rgb(hsv) * 255), 0, 255).astype(np.uint8)
+
+
+def floor_pixels(image):
+    """Pixels that look like floor: low saturation (not a box) and dark (not sky)."""
+    from matplotlib.colors import rgb_to_hsv
+
+    hsv = rgb_to_hsv(image.astype(np.float64) / 255)
+    return (hsv[..., 1] < FLOOR_SATURATION_MAX) & (hsv[..., 2] < FLOOR_VALUE_MAX)
+
+
+def floor_normalise(image, reference):
+    """Per-channel gains, measured and applied on the floor pixels only, that
+    bring their mean colour to `reference` (mean floor colour of Test-ID frames).
+    Boxes and sky are left untouched. (A whole-image grey-world correction made
+    tinted images further from the training look: the sky is not tinted.)"""
+    sel = floor_pixels(image)
+    if not sel.any():
+        return image
+    gain = np.asarray(reference, dtype=np.float64) / np.maximum(image[sel].astype(np.float64).mean(0), 1.0)
+    out = image.astype(np.float64)
+    out[sel] *= gain
+    return np.clip(np.round(out), 0, 255).astype(np.uint8)
+
+
+def transform_image(kind, image, reference=None):
+    if kind == "":
+        return image
+    if kind == "hue_canon":
+        return canonical_hue(image)
+    if kind == "floor_norm":
+        if reference is None:
+            raise ValueError("floor_norm needs the reference floor colour (scripts/colour_reference.py)")
+        return floor_normalise(image, reference)
+    raise ValueError(f"unknown transform {kind!r}; one of {TRANSFORMS}")
+
+
 def blind_image(kind, image, rng):
     """The image a baseline policy sees instead of the camera's."""
     if kind == "black":

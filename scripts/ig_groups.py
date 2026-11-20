@@ -79,8 +79,9 @@ def main():
     parser.add_argument("--baselines", nargs="+", default=["black", "blur"])
     parser.add_argument("--steps", type=int, default=256)
     parser.add_argument("--out", default=str(REPO / "results"))
+    parser.add_argument("--threads", type=int, default=os.cpu_count() or 4)
     args = parser.parse_args()
-    torch.set_num_threads(os.cpu_count() or 4)
+    torch.set_num_threads(args.threads)
 
     frames = load_frames(args.data, sets=args.sets)
     idx = stratified_by_clearance(frames, args.per_bin)

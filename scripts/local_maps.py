@@ -68,27 +68,31 @@ def main():
     parser.add_argument("--scalars", nargs="+", default=["vx", "vy"])
     parser.add_argument("--steps", type=int, default=256)
     parser.add_argument("--out", default=str(REPO / "results"))
+    parser.add_argument("--policy", help="folder with model.zip (default checkpoints/planPW), e.g. runs/ft_dr/final")
+    parser.add_argument("--no-examples", action="store_true", help="only the q_RRA table")
+    parser.add_argument("--threads", type=int, default=os.cpu_count() or 4)
     args = parser.parse_args()
-    torch.set_num_threads(os.cpu_count() or 4)
+    torch.set_num_threads(args.threads)
     out = Path(args.out)
     (out / "figures").mkdir(parents=True, exist_ok=True)
-    net = SteeringNet(load_ppo().policy).eval()
+    net = SteeringNet(load_ppo(args.policy).policy if args.policy else load_ppo().policy).eval()
 
     # 1. examples on the in-distribution frames
     frames = load_frames(args.data, sets=["test_id", "test_id_0"])
     fill = frames.image.reshape(-1, 3).mean(0)        # occlusion patch colour: mean pixel of ID frames
-    picks = select_frames(frames, per_kind=10)
-    print("selected:", {k: len(v) for k, v in picks.items()})
-    chosen = np.unique(np.concatenate([v for v in picks.values() if len(v)]))
-    saved = {"index": chosen, "fill": fill}
-    for kind, v in picks.items():
-        saved[f"kind/{kind}"] = v
-    for scalar in args.scalars:
-        for method in METHODS:
-            saved[f"{scalar}/{method}"] = local_maps(net, frames.image[chosen], frames.state[chosen], scalar, method,
-                                                     steps=args.steps, fill=fill)
-        example_figure(frames, picks, saved, scalar, out / "figures" / f"local_maps_{scalar}.png")
-    np.savez_compressed(out / "local_maps.npz", **saved)
+    if not args.no_examples:
+        picks = select_frames(frames, per_kind=10)
+        print("selected:", {k: len(v) for k, v in picks.items()})
+        chosen = np.unique(np.concatenate([v for v in picks.values() if len(v)]))
+        saved = {"index": chosen, "fill": fill}
+        for kind, v in picks.items():
+            saved[f"kind/{kind}"] = v
+        for scalar in args.scalars:
+            for method in METHODS:
+                saved[f"{scalar}/{method}"] = local_maps(net, frames.image[chosen], frames.state[chosen], scalar,
+                                                         method, steps=args.steps, fill=fill)
+            example_figure(frames, picks, saved, scalar, out / "figures" / f"local_maps_{scalar}.png")
+        np.savez_compressed(out / "local_maps.npz", **saved)
 
     # 2. localisation over a population of box-visible frames, per set
     rows, per_frame = [], []

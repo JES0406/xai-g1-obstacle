@@ -44,6 +44,7 @@ class Job:
     boxes: int
     seed: int
     save_image: bool
+    transform: str = ""   # test-time intervention on the image, see scenarios.TRANSFORMS
 
     def path(self, root):
         return Path(root) / self.set / f"b{self.boxes:02d}_s{self.seed}.npz"
@@ -74,6 +75,15 @@ def build_jobs(config, sets=None, episodes=None):
             raise ValueError(f"unknown baseline {kind!r}; one of {BASELINES}")
         spec = {"seeds_from": seeds_from, "boxes": base["boxes"], "episodes_per_density": base["episodes_per_density"]}
         jobs += _set_jobs(f"baseline_{kind}", "id", kind, spec, 0, episodes)
+    from src.scenarios import TRANSFORMS
+    for name, spec in config.get("interventions", {}).items():
+        like = config["sets"][spec["like"]]
+        if "like" in like:
+            like = {**config["sets"][like["like"]], **{k: v for k, v in like.items() if k != "like"}}
+        if spec["transform"] not in TRANSFORMS:
+            raise ValueError(f"intervention {name}: unknown transform {spec['transform']!r}; one of {TRANSFORMS}")
+        merged = {**like, **{k: v for k, v in spec.items() if k not in ("like", "transform")}}
+        jobs += _set_jobs(name, like.get("variant", "id"), "", merged, image_total, episodes, spec["transform"])
     if sets:
         unknown = set(sets) - {j.set for j in jobs}
         if unknown:
@@ -82,7 +92,7 @@ def build_jobs(config, sets=None, episodes=None):
     return jobs
 
 
-def _set_jobs(name, variant, baseline, spec, image_total, episodes):
+def _set_jobs(name, variant, baseline, spec, image_total, episodes, transform=""):
     densities = spec["boxes"]
     n = episodes or spec["episodes_per_density"]
     # image episodes spread over densities: the first k seeds of each density
@@ -90,7 +100,7 @@ def _set_jobs(name, variant, baseline, spec, image_total, episodes):
     jobs = []
     for boxes, k in zip(densities, share):
         for i in range(n):
-            jobs.append(Job(name, variant, baseline, boxes, spec["seeds_from"] + i, i < min(k, n)))
+            jobs.append(Job(name, variant, baseline, boxes, spec["seeds_from"] + i, i < min(k, n), transform))
     return jobs
 
 
@@ -108,8 +118,10 @@ def _init_worker(policy_dir=None):
     torch.set_num_threads(1)
     model = load_ppo(policy_dir or PPO_DIR)
     env = make_env()
+    reference = REPO / "configs" / "colour_reference.json"
     _worker.update(model=model, net=SteeringNet(model.policy).eval(), env=env,
-                   look=Look(env), seg=Segmenter(env))
+                   look=Look(env), seg=Segmenter(env),
+                   reference=json.loads(reference.read_text())["floor_mean_rgb"] if reference.exists() else None)
 
 
 def run_episode(job, out):
@@ -118,7 +130,7 @@ def run_episode(job, out):
 
     from src.attribution import local_maps
     from src.load_policy import to_inputs
-    from src.scenarios import attributed_region, blind_image, hide_region, random_region_like
+    from src.scenarios import attributed_region, blind_image, hide_region, random_region_like, transform_image
 
     path = job.path(out)
     if path.exists():
@@ -145,6 +157,8 @@ def run_episode(job, out):
             if job.baseline == "mask_random":
                 region = random_region_like(region, rng)
             image = hide_region(image, region)
+        if job.transform:
+            image = transform_image(job.transform, image, w["reference"])
         if job.save_image:
             images.append(image)
             masks.append(w["seg"].mask())

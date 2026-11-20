@@ -40,5 +40,21 @@ baselines:                 # on Test-ID seeds; 17 x 3 densities = 51 episodes pe
     - mask_top             # behaviour test: hide the top-10 % Grad-CAM region every step
     - mask_random          # control: same-shaped region at a random offset
 
+interventions:             # test time, no retraining: transform the image before the policy; same seeds as `like`
+  int_hue_box_colour:      # recolour strongly saturated pixels to the training red -> blue boxes
+    like: test_ood_box_colour
+    transform: hue_canon
+  int_hue_test_id:         # must not hurt in distribution (17 x 3 = 51 episodes)
+    like: test_id
+    transform: hue_canon
+    episodes_per_density: 17
+  int_norm_floor_tint:     # floor pixels' colour brought to the training floor colour (configs/colour_reference.json)
+    like: test_ood_floor_tint
+    transform: floor_norm
+  int_norm_test_id:
+    like: test_id
+    transform: floor_norm
+    episodes_per_density: 17
+
 # Concrete OOD values are set in src/scenarios.py (day 1); they must stay
 # disjoint from any fine-tune domain randomisation ranges.

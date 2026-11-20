@@ -111,8 +111,9 @@ def main():
     parser.add_argument("--M", type=int, default=20)
     parser.add_argument("--checks", nargs="+", default=["randomisation", "road", "agreement", "stability"])
     parser.add_argument("--out", default=str(REPO / "results"))
+    parser.add_argument("--threads", type=int, default=os.cpu_count() or 4)
     args = parser.parse_args()
-    torch.set_num_threads(os.cpu_count() or 4)
+    torch.set_num_threads(args.threads)
     out = Path(args.out)
     (out / "figures").mkdir(parents=True, exist_ok=True)
 
