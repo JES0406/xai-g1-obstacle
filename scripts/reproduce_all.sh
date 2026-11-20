@@ -2,13 +2,13 @@
 # Regenerate every result, table and figure from a clean clone, in order.
 # Run on the machine that produced the published numbers (renders differ between GPUs).
 #
-#   scripts/reproduce_all.sh                  # uses the shipped fine-tuned weights if runs/ft_dr/final exists
-#   scripts/reproduce_all.sh --train-finetune # also retrains the CNN fine-tune (~1 h on an RTX 4070 Ti)
+#   scripts/reproduce_all.sh                  # evaluates the shipped fine-tuned weights in checkpoints/ft_dr
+#   scripts/reproduce_all.sh --train-finetune # retrains the CNN fine-tune (~1 h on an RTX 4070 Ti) and evaluates that
 #
 # Total time on the lab machine (RTX 4070 Ti): about 3 h, mostly CPU-bound attribution.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-export MUJOCO_GL="${MUJOCO_GL:-egl}" PYTHONUNBUFFERED=1
+export MUJOCO_GL="${MUJOCO_GL:-egl}" PYTHONUNBUFFERED=1 PYTHONNOUSERSITE=1   # ignore packages in ~/.local
 
 step() { echo; echo "== $* =="; }
 
@@ -42,18 +42,20 @@ python scripts/run_rollouts.py --sets int_hue_box_colour int_hue_test_id int_nor
 python scripts/check_rollouts.py data/raw
 python scripts/local_maps.py --no-examples --sets int_hue_box_colour int_norm_floor_tint --out results/interventions
 
+FT=checkpoints/ft_dr                     # shipped fine-tuned weights (the ones behind the published numbers)
 if [ "${1:-}" = "--train-finetune" ]; then
     step "CNN fine-tune with visual randomisation"
     python scripts/finetune.py
+    FT=runs/ft_dr/final                  # GPU training is not bit-reproducible: evaluate the new weights instead
 fi
-if [ -f runs/ft_dr/final/model.zip ]; then
-    step "Fine-tune evaluation"
-    python scripts/run_rollouts.py --policy runs/ft_dr/final --out data/raw_ft \
+if [ -f "$FT/model.zip" ]; then
+    step "Fine-tune evaluation ($FT)"
+    python scripts/run_rollouts.py --policy "$FT" --out data/raw_ft \
         --sets test_id test_id_0 test_ood_box_colour test_ood_floor_tint test_ood_lighting
     python scripts/check_rollouts.py data/raw_ft
-    python scripts/local_maps.py --no-examples --policy runs/ft_dr/final --data data/raw_ft --out results/ft
+    python scripts/local_maps.py --no-examples --policy "$FT" --data data/raw_ft --out results/ft
 else
-    echo "no runs/ft_dr/final: fine-tune rows of the before/after table stay empty (use --train-finetune)"
+    echo "no $FT/model.zip: fine-tune rows of the before/after table stay empty (use --train-finetune)"
 fi
 
 step "Before/after table, metrics, report tables, dataset"

@@ -29,6 +29,7 @@ report/       LaTeX report; tables generated from results/
 setup/setup.sh menagerie   # MuJoCo Menagerie G1 into external/ (pinned 8161bba)
 setup/setup.sh env         # conda env xai-g1 from requirements.txt (python 3.11, torch cu126)
 conda activate xai-g1
+export PYTHONNOUSERSITE=1                   # keep packages from ~/.local out of the env
 MUJOCO_GL=egl python scripts/smoke_load.py   # checkpoints load, env builds, net == SB3 action, grads reach the image
 ```
 
@@ -58,9 +59,9 @@ GPUs, so another machine gives close but not identical numbers. Each step on its
 | randomisation, ROAD, agreement, q_LLE/q_AS, 1-px shifts | `python scripts/sanity_checks.py` | `results/sanity_*`, `figures/sanity_*.png` |
 | reference floor colour | `python scripts/colour_reference.py` | `configs/colour_reference.json` |
 | test-time interventions | `MUJOCO_GL=egl python scripts/run_rollouts.py --sets int_hue_box_colour int_hue_test_id int_norm_floor_tint int_norm_test_id` | `data/raw/int_*` |
-| CNN fine-tune (optional) | `MUJOCO_GL=egl python scripts/finetune.py` | `runs/ft_dr/` |
-| fine-tune evaluation | `MUJOCO_GL=egl python scripts/run_rollouts.py --policy runs/ft_dr/final --out data/raw_ft --sets test_id test_id_0 test_ood_box_colour test_ood_floor_tint test_ood_lighting` | `data/raw_ft/` |
-| q_RRA of interventions / fine-tune | `python scripts/local_maps.py --no-examples --sets int_hue_box_colour int_norm_floor_tint --out results/interventions` and `... --policy runs/ft_dr/final --data data/raw_ft --out results/ft` | `results/{interventions,ft}/q_rra.csv` |
+| CNN fine-tune (optional; the weights used are shipped in `checkpoints/ft_dr`) | `MUJOCO_GL=egl python scripts/finetune.py` | `runs/ft_dr/` |
+| fine-tune evaluation | `MUJOCO_GL=egl python scripts/run_rollouts.py --policy checkpoints/ft_dr --out data/raw_ft --sets test_id test_id_0 test_ood_box_colour test_ood_floor_tint test_ood_lighting` | `data/raw_ft/` |
+| q_RRA of interventions / fine-tune | `python scripts/local_maps.py --no-examples --sets int_hue_box_colour int_norm_floor_tint --out results/interventions` and `... --policy checkpoints/ft_dr --data data/raw_ft --out results/ft` | `results/{interventions,ft}/q_rra.csv` |
 | before/after table | `python scripts/before_after.py` | `results/before_after.{csv,md}` |
 | report tables | `python scripts/make_report_tables.py` | `report/tables/*.tex` |
 | published dataset | `python scripts/export_dataset.py` | `data/rollouts/`, `data/README.md` |
