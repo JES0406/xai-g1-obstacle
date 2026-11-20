@@ -1,0 +1,13 @@
+{
+ "task": "obstacles",
+ "algorithm": "ppo",
+ "walker": "checkpoints/g1_vel_v1",
+ "finetune_of": "checkpoints/planPW",
+ "name": "ft_dr",
+ "steps": 1500000,
+ "envs": 12,
+ "lr": 3e-05,
+ "p": 0.5,
+ "seed": 0,
+ "checkpoint_every": 250000
+}
