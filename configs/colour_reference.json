@@ -1,0 +1,13 @@
+{
+ "floor_mean_rgb": [
+  16.3,
+  25.079,
+  34.398
+ ],
+ "frames": 7823,
+ "pixels": 17657283,
+ "sets": [
+  "test_id",
+  "test_id_0"
+ ]
+}
