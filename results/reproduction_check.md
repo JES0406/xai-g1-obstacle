@@ -43,6 +43,14 @@ Before/after (paired change in success, percentage points):
 
 The published `results/` are those of the original run; the conclusions do not depend on which run is used.
 
+## Fresh environment
+
+A second conda environment built only from `requirements.txt` (`setup/setup.sh env xai-g1-fresh`) in the same
+clean clone (commit `28a3933`): `scripts/smoke_load.py` passes with the same step-0 outputs as the original
+environment (μ = [0.736, 1.037, −0.228], V = 91.373), the validation set reproduces the published success and
+box-hit rates exactly (100 / 100 / 100 / 85 % success and 0 / 0 / 0 / 15 % hits with 0 / 10 / 20 / 30 boxes;
+progress and final lateral offset differ in the second decimal), and `scripts/check_rollouts.py` passes.
+
 ## Where the variation comes from
 
 `scripts/determinism_check.py` runs the same episodes several times in one process, in different orders:
