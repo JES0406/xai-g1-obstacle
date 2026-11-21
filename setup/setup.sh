@@ -2,7 +2,7 @@
 # Fetch what the repo does not ship. Run from anywhere:
 #
 #   setup/setup.sh menagerie   # MuJoCo Menagerie's G1 into external/ (pinned commit, sparse: unitree_g1 only)
-#   setup/setup.sh env         # conda env "xai-g1" from requirements.txt (python 3.11)
+#   setup/setup.sh env [name]  # conda env from requirements.txt (python 3.11), default name "xai-g1"
 #
 # Trimmed from setup/setup.sh of JES0406/BecaDeepLearning @ 434846e (only the
 # MuJoCo parts this project needs). Pins from that repo's versions.toml.
@@ -25,8 +25,10 @@ case "${1:-}" in
     ;;
 
   env)
-    PY="$HOME/miniconda3/envs/xai-g1/bin/python"
-    [ -x "$PY" ] || conda create -y -n xai-g1 python=3.11
+    NAME="${2:-xai-g1}"
+    PY="$HOME/miniconda3/envs/$NAME/bin/python"
+    [ -x "$PY" ] || conda create -y -n "$NAME" python=3.11
+    export PYTHONNOUSERSITE=1
     "$PY" -m pip install -r "$ROOT/requirements.txt" --extra-index-url https://download.pytorch.org/whl/cu126
     "$PY" -c "import torch, stable_baselines3, mujoco, captum; print('torch', torch.__version__, '| sb3', stable_baselines3.__version__, '| mujoco', mujoco.__version__, '| captum', captum.__version__)"
     ;;

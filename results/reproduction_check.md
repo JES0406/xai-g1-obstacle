@@ -42,3 +42,19 @@ Before/after (paired change in success, percentage points):
 | lighting | fine-tune | +0.0 | +1.3 |
 
 The published `results/` are those of the original run; the conclusions do not depend on which run is used.
+
+## Where the variation comes from
+
+`scripts/determinism_check.py` runs the same episodes several times in one process, in different orders:
+
+- The simulation is deterministic: two environments reset to the same seed and given the same actions stay
+  bit-identical, and so do their rendered images.
+- The networks are deterministic: the same image and state give bit-identical outputs, before and after other inputs.
+- The rendering is not, across episodes: the first image of an episode can differ (up to 59 grey levels in some
+  pixels on the development laptop) depending on what the GPU rendered before in the same process, and switching
+  between the camera and the segmentation renderers leaves a small trace. With a fresh environment per episode the
+  first image matches, but trajectories still drift after 20–80 steps.
+
+The policy amplifies these pixel differences (a 1-pixel shift of the image already moves its output by about
+0.1 standard deviations), so a single episode is not exactly repeatable on a GPU, while every rate is. Rendering on
+the CPU would remove the variation but would change every image and therefore every published number.
