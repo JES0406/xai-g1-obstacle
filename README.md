@@ -43,8 +43,11 @@ Everything, from a clean clone, in order (about 3 h on an RTX 4070 Ti, mostly CP
 scripts/reproduce_all.sh                   # add --train-finetune to retrain the fine-tune too
 ```
 
-All published numbers come from one machine (RTX 4070 Ti) and this repository; renders differ slightly between
-GPUs, so another machine gives close but not identical numbers. Each step on its own:
+All published numbers come from one machine (RTX 4070 Ti) and this repository. A clean anonymous clone rerun on
+that machine reproduces every rate inside its published 95 % interval and the baselines exactly, but not bit for
+bit: the closed loop amplifies tiny numerical differences after a few dozen steps (see
+[`results/reproduction_check.md`](results/reproduction_check.md)). Other GPUs also render slightly differently.
+Each step on its own:
 
 | result | command | output |
 |---|---|---|
