@@ -30,6 +30,8 @@ setup/setup.sh menagerie   # MuJoCo Menagerie G1 into external/ (pinned 8161bba)
 setup/setup.sh env         # conda env xai-g1 from requirements.txt (python 3.11, torch cu126)
 conda activate xai-g1
 export PYTHONNOUSERSITE=1                   # keep packages from ~/.local out of the env
+type python                                 # must be the env's file; if it is a shell function or alias
+                                            # (e.g. from uv), run `unset -f python` or `unalias python` first
 MUJOCO_GL=egl python scripts/smoke_load.py   # checkpoints load, env builds, net == SB3 action, grads reach the image
 ```
 
